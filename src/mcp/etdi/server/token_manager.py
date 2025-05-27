@@ -10,7 +10,7 @@ import jwt
 
 from ..types import OAuthConfig, ETDIToolDefinition, SecurityInfo, OAuthInfo
 from ..exceptions import OAuthError, TokenValidationError
-from ..oauth import OAuthManager, Auth0Provider, OktaProvider, AzureADProvider
+from ..oauth import OAuthManager, Auth0Provider, OktaProvider, AzureADProvider, CustomOAuthProvider, GenericOAuthProvider
 
 logger = logging.getLogger(__name__)
 
@@ -76,8 +76,19 @@ class TokenManager:
             return OktaProvider(config)
         elif provider_type in ["azure", "azuread", "azure_ad"]:
             return AzureADProvider(config)
+        elif provider_type == "custom":
+            # Custom provider requires endpoints configuration
+            endpoints = getattr(config, 'endpoints', None)
+            if not endpoints:
+                raise OAuthError("Custom OAuth provider requires 'endpoints' configuration")
+            return GenericOAuthProvider(config, endpoints)
         else:
-            raise OAuthError(f"Unsupported OAuth provider: {config.provider}")
+            # Try to create a generic provider if endpoints are provided
+            endpoints = getattr(config, 'endpoints', None)
+            if endpoints:
+                return GenericOAuthProvider(config, endpoints)
+            else:
+                raise OAuthError(f"Unsupported OAuth provider: {config.provider}. Use 'custom' with endpoints configuration for custom providers.")
     
     async def get_token_for_tool(
         self, 

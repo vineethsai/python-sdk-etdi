@@ -7,25 +7,32 @@ import logging
 from typing import Any, Dict, List, Optional, Union
 from datetime import datetime
 
+from mcp.client.session import ClientSession
+from mcp.client.stdio import stdio_client
+
 from ..types import (
-    ETDIToolDefinition, 
-    ETDIClientConfig, 
+    ETDIToolDefinition,
+    ETDIClientConfig,
     OAuthConfig,
     SecurityLevel,
     VerificationStatus,
-    Permission
+    Permission,
+    SecurityInfo,
+    OAuthInfo
 )
 from ..exceptions import ETDIError, ConfigurationError, ToolNotFoundError
 from ..oauth import OAuthManager, Auth0Provider, OktaProvider, AzureADProvider
+from ..oauth.custom import CustomOAuthProvider, GenericOAuthProvider
 from .verifier import ETDIVerifier
 from .approval_manager import ApprovalManager
+from ..events import EventType, emit_tool_event, emit_security_event, get_event_emitter
 
 logger = logging.getLogger(__name__)
 
 
 class ETDIClient:
     """
-    Main ETDI client for secure tool operations
+    Main ETDI client for secure tool operations with MCP integration
     """
     
     def __init__(self, config: Union[ETDIClientConfig, Dict[str, Any]]):
@@ -46,7 +53,14 @@ class ETDIClient:
         self.approval_manager: Optional[ApprovalManager] = None
         self._initialized = False
         
-        # Event callbacks
+        # MCP integration
+        self._mcp_sessions: Dict[str, ClientSession] = {}
+        self._discovered_tools: Dict[str, ETDIToolDefinition] = {}
+        
+        # Event system integration
+        self.event_emitter = get_event_emitter()
+        
+        # Event callbacks (legacy support)
         self._event_callbacks: Dict[str, List[callable]] = {}
     
     async def initialize(self) -> None:
@@ -75,6 +89,15 @@ class ETDIClient:
             await self.oauth_manager.initialize_all()
             
             self._initialized = True
+            
+            # Emit initialization event
+            emit_tool_event(
+                EventType.CLIENT_INITIALIZED,
+                "etdi_client",
+                "ETDIClient",
+                data={"security_level": self.config.security_level.value}
+            )
+            
             logger.info("ETDI client initialized successfully")
             
         except Exception as e:
@@ -82,9 +105,63 @@ class ETDIClient:
     
     async def cleanup(self) -> None:
         """Cleanup resources"""
+        # Close MCP sessions
+        for session in self._mcp_sessions.values():
+            try:
+                await session.close()
+            except Exception as e:
+                logger.warning(f"Error closing MCP session: {e}")
+        
+        self._mcp_sessions.clear()
+        
         if self.oauth_manager:
             await self.oauth_manager.cleanup_all()
+        
+        # Emit disconnection event
+        emit_tool_event(
+            EventType.CLIENT_DISCONNECTED,
+            "etdi_client",
+            "ETDIClient"
+        )
+        
         self._initialized = False
+    
+    async def connect_to_server(self, server_command: List[str], server_name: Optional[str] = None) -> str:
+        """
+        Connect to an MCP server
+        
+        Args:
+            server_command: Command to start the MCP server
+            server_name: Optional name for the server
+            
+        Returns:
+            Server identifier
+        """
+        if not self._initialized:
+            await self.initialize()
+        
+        try:
+            # Create session
+            session = await stdio_client(server_command)
+            
+            # Generate server ID
+            server_id = server_name or f"server_{len(self._mcp_sessions)}"
+            self._mcp_sessions[server_id] = session
+            
+            # Emit connection event
+            emit_tool_event(
+                EventType.CLIENT_CONNECTED,
+                server_id,
+                "ETDIClient",
+                data={"server_command": server_command}
+            )
+            
+            logger.info(f"Connected to MCP server: {server_id}")
+            return server_id
+            
+        except Exception as e:
+            logger.error(f"Failed to connect to MCP server: {e}")
+            raise ETDIError(f"Server connection failed: {e}")
     
     async def __aenter__(self):
         await self.initialize()
@@ -93,41 +170,125 @@ class ETDIClient:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.cleanup()
     
-    async def discover_tools(self, servers: Optional[List[Any]] = None) -> List[ETDIToolDefinition]:
+    async def discover_tools(self, server_ids: Optional[List[str]] = None) -> List[ETDIToolDefinition]:
         """
         Discover available tools from MCP servers
         
         Args:
-            servers: List of MCP servers to query (if None, uses configured servers)
+            server_ids: List of server IDs to discover from (all if None)
             
         Returns:
-            List of discovered and verified tools
+            List of discovered ETDI tool definitions
         """
         if not self._initialized:
             await self.initialize()
         
         try:
-            # This would integrate with actual MCP client discovery
-            # For now, return empty list as placeholder
             discovered_tools = []
+            servers_to_query = server_ids or list(self._mcp_sessions.keys())
             
-            # TODO: Integrate with actual MCP client to discover tools
-            # discovered_tools = await self._discover_from_mcp_servers(servers)
+            for server_id in servers_to_query:
+                if server_id not in self._mcp_sessions:
+                    logger.warning(f"Server {server_id} not found, skipping")
+                    continue
+                
+                session = self._mcp_sessions[server_id]
+                
+                try:
+                    # Get tools from MCP server
+                    tools_response = await session.list_tools()
+                    
+                    for mcp_tool in tools_response.tools:
+                        # Convert MCP tool to ETDI tool definition
+                        etdi_tool = self._convert_mcp_tool_to_etdi(mcp_tool, server_id)
+                        discovered_tools.append(etdi_tool)
+                        
+                        # Store in cache
+                        self._discovered_tools[etdi_tool.id] = etdi_tool
+                        
+                        # Emit discovery event
+                        emit_tool_event(
+                            EventType.TOOL_DISCOVERED,
+                            etdi_tool.id,
+                            "ETDIClient",
+                            tool_name=etdi_tool.name,
+                            tool_version=etdi_tool.version,
+                            provider_id=etdi_tool.provider.get("id"),
+                            data={"server_id": server_id}
+                        )
+                
+                except Exception as e:
+                    logger.error(f"Error discovering tools from server {server_id}: {e}")
+                    continue
             
-            # Verify discovered tools
-            verified_tools = []
-            for tool in discovered_tools:
-                if self._should_include_tool(tool):
-                    verification_result = await self.verifier.verify_tool(tool)
-                    if verification_result.valid or self.config.show_unverified_tools:
+            # Filter tools based on security level
+            if self.config.security_level == SecurityLevel.STRICT:
+                # Only return verified tools
+                verified_tools = []
+                for tool in discovered_tools:
+                    if await self.verify_tool(tool):
                         verified_tools.append(tool)
-            
-            self._emit_event("tools_discovered", {"count": len(verified_tools)})
-            return verified_tools
+                return verified_tools
+            elif self.config.security_level == SecurityLevel.ENHANCED:
+                # Return all tools but mark verification status
+                for tool in discovered_tools:
+                    await self.verify_tool(tool)
+                return discovered_tools
+            else:
+                # Basic level - return all tools
+                return discovered_tools
             
         except Exception as e:
             logger.error(f"Error discovering tools: {e}")
             raise ETDIError(f"Tool discovery failed: {e}")
+    
+    def _convert_mcp_tool_to_etdi(self, mcp_tool: Any, server_id: str) -> ETDIToolDefinition:
+        """
+        Convert MCP tool definition to ETDI tool definition
+        
+        Args:
+            mcp_tool: MCP tool definition
+            server_id: Server identifier
+            
+        Returns:
+            ETDI tool definition
+        """
+        # Extract basic information
+        tool_id = mcp_tool.name
+        name = getattr(mcp_tool, 'displayName', mcp_tool.name)
+        description = getattr(mcp_tool, 'description', '')
+        
+        # Create provider information
+        provider = {
+            "id": server_id,
+            "name": f"MCP Server {server_id}"
+        }
+        
+        # Convert schema
+        schema = getattr(mcp_tool, 'inputSchema', {"type": "object"})
+        
+        # Create basic permissions (MCP tools don't have explicit permissions)
+        permissions = [
+            Permission(
+                name="execute",
+                description=f"Execute {name}",
+                scope=f"tool:{tool_id}:execute",
+                required=True
+            )
+        ]
+        
+        # Create ETDI tool definition
+        etdi_tool = ETDIToolDefinition(
+            id=tool_id,
+            name=name,
+            version="1.0.0",  # MCP tools don't have versions
+            description=description,
+            provider=provider,
+            schema=schema,
+            permissions=permissions
+        )
+        
+        return etdi_tool
     
     async def verify_tool(self, tool: ETDIToolDefinition) -> bool:
         """
@@ -146,10 +307,25 @@ class ETDIClient:
             result = await self.verifier.verify_tool(tool)
             
             if result.valid:
+                emit_tool_event(
+                    EventType.TOOL_VERIFIED,
+                    tool.id,
+                    "ETDIClient",
+                    tool_name=tool.name,
+                    tool_version=tool.version,
+                    provider_id=tool.provider.get("id")
+                )
                 self._emit_event("tool_verified", {"tool": tool})
             else:
+                emit_security_event(
+                    EventType.SIGNATURE_FAILED,
+                    "ETDIClient",
+                    "medium",
+                    threat_type="verification_failure",
+                    details={"tool_id": tool.id, "error": result.error}
+                )
                 self._emit_event("tool_verification_failed", {
-                    "tool": tool, 
+                    "tool": tool,
                     "error": result.error
                 })
             
@@ -177,6 +353,16 @@ class ETDIClient:
             
             # Create approval record
             await self.approval_manager.approve_tool_with_etdi(tool, permissions)
+            
+            # Emit approval event
+            emit_tool_event(
+                EventType.TOOL_APPROVED,
+                tool.id,
+                "ETDIClient",
+                tool_name=tool.name,
+                tool_version=tool.version,
+                provider_id=tool.provider.get("id")
+            )
             
             self._emit_event("tool_approved", {"tool": tool, "permissions": permissions})
             logger.info(f"Tool {tool.id} approved successfully")
@@ -219,28 +405,63 @@ class ETDIClient:
             await self.initialize()
         
         try:
-            # TODO: Get tool definition from discovered tools
-            # For now, raise error as placeholder
-            raise ToolNotFoundError(f"Tool {tool_id} not found", tool_id=tool_id)
+            # Get tool definition
+            tool = self._discovered_tools.get(tool_id)
+            if not tool:
+                raise ToolNotFoundError(f"Tool {tool_id} not found", tool_id=tool_id)
             
-            # This would be the actual implementation:
-            # tool = await self._get_tool_definition(tool_id)
-            # 
-            # # Check if tool can be invoked
-            # approval = await self.approval_manager.get_approval(tool_id)
-            # check_result = await self.verifier.check_tool_before_invocation(tool, approval.to_dict() if approval else None)
-            # 
-            # if not check_result.can_proceed:
-            #     if check_result.requires_reapproval:
-            #         raise ETDIError(f"Tool {tool_id} requires re-approval: {check_result.reason}")
-            #     else:
-            #         raise ETDIError(f"Tool {tool_id} cannot be invoked: {check_result.reason}")
-            # 
-            # # Invoke tool through MCP
-            # result = await self._invoke_mcp_tool(tool_id, params)
-            # 
-            # self._emit_event("tool_invoked", {"tool_id": tool_id, "params": params})
-            # return result
+            # Check if tool is approved
+            if not await self.is_tool_approved(tool_id):
+                raise ETDIError(f"Tool {tool_id} is not approved")
+            
+            # Check tool before invocation
+            stored_approval = await self.approval_manager.get_approval_record(tool_id)
+            check_result = await self.verifier.check_tool_before_invocation(tool, stored_approval)
+            
+            if not check_result.can_proceed:
+                if check_result.requires_reapproval:
+                    emit_security_event(
+                        EventType.VERSION_CHANGED,
+                        "ETDIClient",
+                        "high",
+                        threat_type="version_change",
+                        details={"tool_id": tool_id, "changes": check_result.changes_detected}
+                    )
+                    raise ETDIError(f"Tool {tool_id} requires re-approval: {check_result.reason}")
+                else:
+                    emit_security_event(
+                        EventType.SECURITY_VIOLATION,
+                        "ETDIClient",
+                        "high",
+                        threat_type="invocation_blocked",
+                        details={"tool_id": tool_id, "reason": check_result.reason}
+                    )
+                    raise ETDIError(f"Tool {tool_id} invocation blocked: {check_result.reason}")
+            
+            # Find the server that hosts this tool
+            server_id = tool.provider.get("id")
+            if server_id not in self._mcp_sessions:
+                raise ETDIError(f"Server {server_id} not connected")
+            
+            session = self._mcp_sessions[server_id]
+            
+            # Invoke tool via MCP
+            result = await session.call_tool(tool_id, params)
+            
+            # Emit invocation event
+            emit_tool_event(
+                EventType.TOOL_INVOKED,
+                tool_id,
+                "ETDIClient",
+                tool_name=tool.name,
+                tool_version=tool.version,
+                provider_id=tool.provider.get("id"),
+                data={"parameters": params}
+            )
+            
+            self._emit_event("tool_invoked", {"tool_id": tool_id, "params": params})
+            
+            return result.content[0].text if result.content else "No result"
             
         except Exception as e:
             logger.error(f"Error invoking tool {tool_id}: {e}")
@@ -262,14 +483,15 @@ class ETDIClient:
             await self.initialize()
         
         try:
-            # TODO: Get current tool definition
-            # For now, return False as placeholder
-            return False
+            current_tool = self._discovered_tools.get(tool_id)
+            if not current_tool:
+                return False
             
-            # This would be the actual implementation:
-            # tool = await self._get_tool_definition(tool_id)
-            # changes = await self.approval_manager.check_for_changes(tool)
-            # return changes.get("changes_detected", False)
+            stored_approval = await self.approval_manager.get_approval_record(tool_id)
+            if not stored_approval:
+                return False
+            
+            return current_tool.version != stored_approval.approved_version
             
         except Exception as e:
             logger.error(f"Error checking version change for tool {tool_id}: {e}")
@@ -372,8 +594,19 @@ class ETDIClient:
             provider = OktaProvider(oauth_config)
         elif oauth_config.provider.lower() in ["azure", "azuread", "azure_ad"]:
             provider = AzureADProvider(oauth_config)
+        elif oauth_config.provider.lower() == "custom":
+            # Custom provider requires endpoints configuration
+            endpoints = getattr(oauth_config, 'endpoints', None)
+            if not endpoints:
+                raise ConfigurationError("Custom OAuth provider requires 'endpoints' configuration")
+            provider = GenericOAuthProvider(oauth_config, endpoints)
         else:
-            raise ConfigurationError(f"Unsupported OAuth provider: {oauth_config.provider}")
+            # Try to create a generic provider if endpoints are provided
+            endpoints = getattr(oauth_config, 'endpoints', None)
+            if endpoints:
+                provider = GenericOAuthProvider(oauth_config, endpoints)
+            else:
+                raise ConfigurationError(f"Unsupported OAuth provider: {oauth_config.provider}. Use 'custom' with endpoints configuration for custom providers.")
         
         self.oauth_manager.register_provider(oauth_config.provider, provider)
     
