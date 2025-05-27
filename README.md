@@ -1,10 +1,48 @@
 # Model Context Protocol Python SDK with ETDI Security
 
-A Python implementation of the Model Context Protocol (MCP) with Enhanced Tool Definition Interface (ETDI) security extensions.
+A Python implementation of the Model Context Protocol (MCP) with Enhanced Tool Definition Interface (ETDI) security extensions that **seamlessly integrates** with existing MCP infrastructure.
 
 ## Overview
 
-This SDK provides a secure implementation of MCP with OAuth 2.0-based security enhancements to prevent Tool Poisoning and Rug Pull attacks. ETDI adds cryptographic verification, immutable versioned definitions, and explicit permission management to the MCP ecosystem.
+This SDK provides a secure implementation of MCP with OAuth 2.0-based security enhancements to prevent Tool Poisoning and Rug Pull attacks. ETDI adds cryptographic verification, immutable versioned definitions, and explicit permission management to the MCP ecosystem **while maintaining full compatibility** with existing MCP servers and clients.
+
+## 🔄 **Seamless MCP Integration**
+
+ETDI is designed for **zero-friction adoption** with existing MCP infrastructure:
+
+### **✅ Backward Compatibility**
+- **Existing MCP servers work unchanged** - ETDI clients can discover and use any MCP server
+- **Existing MCP clients work unchanged** - ETDI servers are fully MCP-compatible
+- **Gradual migration path** - Add security incrementally without breaking existing workflows
+- **Optional security** - ETDI features are opt-in, not mandatory
+
+### **🔌 Drop-in Integration**
+```python
+# Existing MCP server becomes ETDI-secured with one decorator
+from mcp.server.fastmcp import FastMCP
+
+app = FastMCP("My Server")
+
+# Before: Regular MCP tool
+@app.tool()
+def my_tool(data: str) -> str:
+    return f"Processed: {data}"
+
+# After: ETDI-secured tool (existing code unchanged!)
+@app.tool(etdi=True, etdi_permissions=['data:read'])
+def my_tool(data: str) -> str:
+    return f"Processed: {data}"  # Same logic, now cryptographically secured
+```
+
+### **🌐 Universal Discovery**
+```python
+# ETDI client discovers ALL MCP servers (ETDI and non-ETDI)
+from mcp.etdi.client.etdi_client import ETDIClient
+
+client = ETDIClient(config)
+await client.connect_to_server(["python", "-m", "any_mcp_server"], "server-name")
+tools = await client.discover_tools()  # Works with any MCP server!
+```
 
 ## Features
 
@@ -13,19 +51,22 @@ This SDK provides a secure implementation of MCP with OAuth 2.0-based security e
 - **Tool Management**: Register, discover, and invoke tools
 - **Resource Access**: Secure access to external resources
 - **Prompt Templates**: Reusable prompt templates for LLM interactions
+- **🔄 Full MCP Compatibility**: Works with any existing MCP server or client
 
 ### ETDI Security Enhancements
-- **OAuth 2.0 Integration**: Support for Auth0, Okta, and Azure AD
+- **OAuth 2.0 Integration**: Support for Auth0, Okta, Azure AD, and custom providers
 - **Tool Verification**: Cryptographic verification of tool authenticity
 - **Permission Management**: Fine-grained permission control with OAuth scopes
 - **Version Control**: Automatic detection of tool changes requiring re-approval
 - **Approval Management**: Encrypted storage of user tool approvals
+- **🔌 Seamless Integration**: Add security to existing MCP tools with simple decorators
 
 ### Security Features
 - **Tool Poisoning Prevention**: Cryptographic verification prevents malicious tool impersonation
 - **Rug Pull Protection**: Version and permission change detection prevents unauthorized modifications
 - **Multiple Security Levels**: Basic, Enhanced, and Strict security modes
 - **Audit Logging**: Comprehensive security event logging
+- **🛡️ Non-Breaking Security**: Security features don't break existing MCP workflows
 
 ## Installation
 
@@ -153,6 +194,174 @@ azure_config = OAuthConfig(
     domain="your-tenant-id",
     scopes=["https://graph.microsoft.com/.default"]
 )
+```
+
+## 🔄 MCP Ecosystem Integration
+
+ETDI is designed to work seamlessly with the entire MCP ecosystem, providing security enhancements without breaking existing workflows.
+
+### **Connecting to Any MCP Server**
+
+ETDI clients can connect to and discover tools from **any MCP server**, whether it uses ETDI security or not:
+
+```python
+from mcp.etdi.client.etdi_client import ETDIClient
+
+# Connect to existing MCP servers
+client = ETDIClient(config)
+
+# Connect to a standard MCP server (no ETDI)
+await client.connect_to_server(["python", "-m", "mcp_weather_server"], "weather")
+
+# Connect to an ETDI-enabled server
+await client.connect_to_server(["python", "-m", "secure_banking_server"], "banking")
+
+# Connect to any MCP server via stdio
+await client.connect_to_server(["node", "my-js-mcp-server.js"], "js-server")
+
+# Discover tools from ALL connected servers
+all_tools = await client.discover_tools()
+
+# ETDI automatically handles security for ETDI tools,
+# and provides basic compatibility for non-ETDI tools
+for tool in all_tools:
+    if tool.verification_status.value == "verified":
+        print(f"✅ ETDI-secured: {tool.name}")
+    else:
+        print(f"🔓 Standard MCP: {tool.name}")
+```
+
+### **Upgrading Existing MCP Servers**
+
+Transform any existing MCP server into an ETDI-secured server with minimal changes:
+
+```python
+# BEFORE: Standard MCP server with FastMCP
+from mcp.server.fastmcp import FastMCP
+
+app = FastMCP("My Banking Server")
+
+@app.tool()
+def transfer_money(from_account: str, to_account: str, amount: float) -> str:
+    # Existing business logic unchanged
+    return f"Transferred ${amount} from {from_account} to {to_account}"
+
+@app.tool()
+def get_balance(account_id: str) -> str:
+    # Existing business logic unchanged
+    return f"Account {account_id} balance: $1,234.56"
+
+# AFTER: ETDI-secured server (same code + security decorators)
+from mcp.server.fastmcp import FastMCP
+
+app = FastMCP("My Banking Server")
+
+@app.tool(etdi=True, etdi_permissions=['banking:write'], etdi_max_call_depth=2)
+def transfer_money(from_account: str, to_account: str, amount: float) -> str:
+    # Same business logic - now cryptographically secured!
+    return f"Transferred ${amount} from {from_account} to {to_account}"
+
+@app.tool(etdi=True, etdi_permissions=['banking:read'])
+def get_balance(account_id: str) -> str:
+    # Same business logic - now with permission control!
+    return f"Account {account_id} balance: $1,234.56"
+```
+
+### **Mixed Environment Support**
+
+ETDI supports mixed environments where some tools are secured and others are not:
+
+```python
+# Client configuration for mixed environments
+config = ETDIClientConfig(
+    security_level=SecurityLevel.ENHANCED,  # Strict for ETDI tools
+    allow_non_etdi_tools=True,              # Allow standard MCP tools
+    show_unverified_tools=True              # Show all available tools
+)
+
+client = ETDIClient(config)
+
+# Discover tools from multiple server types
+tools = await client.discover_tools()
+
+for tool in tools:
+    if tool.verification_status.value == "verified":
+        # ETDI tool - full security verification
+        await client.approve_tool(tool)
+        result = await client.invoke_tool(tool.id, params)
+    else:
+        # Standard MCP tool - basic compatibility mode
+        print(f"⚠️ Using unverified tool: {tool.name}")
+        # Still works, but without ETDI security guarantees
+```
+
+### **Migration Strategies**
+
+#### **1. Gradual Migration**
+```python
+# Start with basic security, upgrade incrementally
+@app.tool(etdi=True)  # Basic ETDI security
+def step1_tool(): pass
+
+@app.tool(etdi=True, etdi_permissions=['data:read'])  # Add permissions
+def step2_tool(): pass
+
+@app.tool(etdi=True, etdi_permissions=['data:write'], etdi_max_call_depth=3)  # Full security
+def step3_tool(): pass
+```
+
+#### **2. Parallel Deployment**
+```python
+# Run ETDI and non-ETDI versions side by side
+@app.tool()  # Original version for backward compatibility
+def legacy_calculator(a: int, b: int) -> int:
+    return a + b
+
+@app.tool(etdi=True, etdi_permissions=['math:calculate'])  # Secured version
+def secure_calculator(a: int, b: int) -> int:
+    return a + b  # Same logic, enhanced security
+```
+
+### **Ecosystem Compatibility Matrix**
+
+| Component | ETDI Client | Standard MCP Client | ETDI Server | Standard MCP Server |
+|-----------|-------------|-------------------|-------------|-------------------|
+| **ETDI Client** | ✅ Full Security | ✅ Discovers Tools | ✅ Full Security | ✅ Basic Compatibility |
+| **Standard MCP Client** | ✅ Basic Compatibility | ✅ Standard MCP | ✅ Basic Compatibility | ✅ Standard MCP |
+| **ETDI Server** | ✅ Full Security | ✅ Basic Compatibility | N/A | N/A |
+| **Standard MCP Server** | ✅ Basic Compatibility | ✅ Standard MCP | N/A | N/A |
+
+### **Real-World Integration Examples**
+
+#### **Enterprise Deployment**
+```python
+# Enterprise setup: Mix of legacy and secured systems
+enterprise_client = ETDIClient({
+    "security_level": "strict",           # Strict for financial tools
+    "allow_non_etdi_tools": True,         # Allow legacy systems
+    "oauth_config": enterprise_oauth      # Enterprise OAuth
+})
+
+# Connect to various systems
+await enterprise_client.connect_to_server(["python", "-m", "legacy_crm"], "crm")
+await enterprise_client.connect_to_server(["python", "-m", "secure_banking"], "banking")
+await enterprise_client.connect_to_server(["node", "analytics-server.js"], "analytics")
+
+# All tools available, security applied where possible
+tools = await enterprise_client.discover_tools()
+```
+
+#### **Development Environment**
+```python
+# Development: Relaxed security for testing
+dev_client = ETDIClient({
+    "security_level": "basic",            # Relaxed for development
+    "allow_non_etdi_tools": True,         # Allow all tools
+    "show_unverified_tools": True         # Show everything
+})
+
+# Test against any MCP server
+await dev_client.connect_to_server(["python", "-m", "test_server"], "test")
 ```
 
 ## Security Levels
