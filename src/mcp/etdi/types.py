@@ -103,6 +103,38 @@ class SecurityInfo:
 
 
 @dataclass
+class CallStackConstraints:
+    """Call stack constraints for a tool"""
+    max_depth: Optional[int] = None
+    allowed_callers: Optional[List[str]] = None
+    allowed_callees: Optional[List[str]] = None
+    blocked_callers: Optional[List[str]] = None
+    blocked_callees: Optional[List[str]] = None
+    require_approval_for_chains: bool = False
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "max_depth": self.max_depth,
+            "allowed_callers": self.allowed_callers,
+            "allowed_callees": self.allowed_callees,
+            "blocked_callers": self.blocked_callers,
+            "blocked_callees": self.blocked_callees,
+            "require_approval_for_chains": self.require_approval_for_chains
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "CallStackConstraints":
+        return cls(
+            max_depth=data.get("max_depth"),
+            allowed_callers=data.get("allowed_callers"),
+            allowed_callees=data.get("allowed_callees"),
+            blocked_callers=data.get("blocked_callers"),
+            blocked_callees=data.get("blocked_callees"),
+            require_approval_for_chains=data.get("require_approval_for_chains", False)
+        )
+
+
+@dataclass
 class ETDIToolDefinition:
     """Enhanced tool definition with security information"""
     id: str
@@ -113,6 +145,7 @@ class ETDIToolDefinition:
     schema: Dict[str, Any]
     permissions: List[Permission] = field(default_factory=list)
     security: Optional[SecurityInfo] = None
+    call_stack_constraints: Optional[CallStackConstraints] = None
     verification_status: VerificationStatus = VerificationStatus.UNVERIFIED
     
     def to_dict(self) -> Dict[str, Any]:
@@ -125,6 +158,7 @@ class ETDIToolDefinition:
             "schema": self.schema,
             "permissions": [p.to_dict() for p in self.permissions],
             "security": self.security.to_dict() if self.security else None,
+            "call_stack_constraints": self.call_stack_constraints.to_dict() if self.call_stack_constraints else None,
             "verification_status": self.verification_status.value
         }
     
@@ -132,6 +166,7 @@ class ETDIToolDefinition:
     def from_dict(cls, data: Dict[str, Any]) -> "ETDIToolDefinition":
         permissions = [Permission.from_dict(p) for p in data.get("permissions", [])]
         security_data = data.get("security")
+        constraints_data = data.get("call_stack_constraints")
         
         return cls(
             id=data["id"],
@@ -142,6 +177,7 @@ class ETDIToolDefinition:
             schema=data["schema"],
             permissions=permissions,
             security=SecurityInfo.from_dict(security_data) if security_data else None,
+            call_stack_constraints=CallStackConstraints.from_dict(constraints_data) if constraints_data else None,
             verification_status=VerificationStatus(data.get("verification_status", "unverified"))
         )
     

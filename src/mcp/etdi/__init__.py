@@ -16,6 +16,7 @@ from .types import (
     ChangeDetectionResult,
     SecurityLevel,
     VerificationStatus,
+    CallStackConstraints,
 )
 
 from .exceptions import (
@@ -97,6 +98,7 @@ __all__ = [
     "ChangeDetectionResult",
     "SecurityLevel",
     "VerificationStatus",
+    "CallStackConstraints",
     
     # Exceptions (always available)
     "ETDIError",
