@@ -77,6 +77,9 @@ from .inspector import (
     SecurityAnalyzer,
     TokenDebugger,
     OAuthValidator,
+    CallStackVerifier,
+    CallStackPolicy,
+    CallStackViolationType,
 )
 
 __version__ = "1.0.0"
@@ -115,6 +118,9 @@ __all__ = [
     "SecurityAnalyzer",
     "TokenDebugger",
     "OAuthValidator",
+    "CallStackVerifier",
+    "CallStackPolicy",
+    "CallStackViolationType",
 ]
 
 # Add client components if available
