@@ -24,6 +24,13 @@ except ImportError:
     print("Error: mcp.server.fastmcp is not installed or not in PYTHONPATH")
     sys.exit(1)
 
+# Try to import ETDI CLI
+try:
+    from mcp.etdi.cli.etdi_cli import cli as etdi_cli
+    ETDI_AVAILABLE = True
+except ImportError:
+    ETDI_AVAILABLE = False
+
 try:
     import dotenv
 except ImportError:
@@ -505,3 +512,27 @@ def install(
     else:
         logger.error(f"Failed to install {name} in Claude app")
         sys.exit(1)
+
+
+# Add ETDI CLI as a subcommand if available
+if ETDI_AVAILABLE:
+    @app.command()
+    def etdi(
+        ctx: typer.Context,
+    ) -> None:
+        """ETDI - Enhanced Tool Definition Interface commands"""
+        # Convert typer context to click context and invoke ETDI CLI
+        import click
+        
+        # Create a click context from typer context
+        click_ctx = click.Context(etdi_cli)
+        click_ctx.params = {}
+        
+        # Get remaining args from typer context
+        remaining_args = ctx.params.get('args', [])
+        if not remaining_args:
+            # Show ETDI help if no args
+            etdi_cli.main(['--help'], standalone_mode=False)
+        else:
+            # Pass through to ETDI CLI
+            etdi_cli.main(remaining_args, standalone_mode=False)

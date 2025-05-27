@@ -148,6 +148,41 @@ class OAuthValidator:
                 response_times={}
             )
     
+    def validate_configuration(self, config: OAuthConfig) -> ProviderValidationResult:
+        """
+        Synchronous wrapper for configuration validation
+        
+        Args:
+            config: OAuth configuration to validate
+            
+        Returns:
+            Provider validation result
+        """
+        try:
+            # Run async validation in sync context
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                return loop.run_until_complete(self.validate_provider(config.provider, config))
+            finally:
+                loop.close()
+        except Exception as e:
+            logger.error(f"Error in synchronous validation: {e}")
+            return ProviderValidationResult(
+                provider_name=config.provider,
+                is_reachable=False,
+                jwks_accessible=False,
+                token_endpoint_accessible=False,
+                configuration_valid=False,
+                checks=[ValidationCheck(
+                    name="sync_validation_error",
+                    passed=False,
+                    message=f"Synchronous validation failed: {e}",
+                    severity="critical"
+                )],
+                response_times={}
+            )
+    
     async def _validate_configuration(self, config: OAuthConfig) -> List[ValidationCheck]:
         """Validate OAuth configuration"""
         checks = []

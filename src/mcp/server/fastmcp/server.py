@@ -48,6 +48,14 @@ from mcp.server.session import ServerSession, ServerSessionT
 from mcp.server.sse import SseServerTransport
 from mcp.server.stdio import stdio_server
 from mcp.server.streamable_http import EventStore
+
+# Try to import ETDI components
+try:
+    from mcp.etdi import ETDIToolDefinition, CallStackConstraints, Permission, SecurityInfo
+    from mcp.etdi.types import OAuthConfig
+    ETDI_AVAILABLE = True
+except ImportError:
+    ETDI_AVAILABLE = False
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 from mcp.shared.context import LifespanContextT, RequestContext
 from mcp.types import (
@@ -344,6 +352,12 @@ class FastMCP:
         name: str | None = None,
         description: str | None = None,
         annotations: ToolAnnotations | None = None,
+        etdi: bool = False,
+        etdi_permissions: list[str] | None = None,
+        etdi_oauth_scopes: list[str] | None = None,
+        etdi_max_call_depth: int | None = None,
+        etdi_allowed_callees: list[str] | None = None,
+        etdi_blocked_callees: list[str] | None = None,
     ) -> Callable[[AnyFunction], AnyFunction]:
         """Decorator to register a tool.
 
@@ -355,6 +369,12 @@ class FastMCP:
             name: Optional name for the tool (defaults to function name)
             description: Optional description of what the tool does
             annotations: Optional ToolAnnotations providing additional tool information
+            etdi: Enable ETDI (Enhanced Tool Definition Interface) security features
+            etdi_permissions: List of permission scopes required for ETDI (e.g., ['data:read', 'files:write'])
+            etdi_oauth_scopes: List of OAuth scopes for ETDI authentication
+            etdi_max_call_depth: Maximum call stack depth for this tool
+            etdi_allowed_callees: List of tool IDs this tool is allowed to call
+            etdi_blocked_callees: List of tool IDs this tool is blocked from calling
 
         Example:
             @server.tool()
@@ -365,6 +385,10 @@ class FastMCP:
             def tool_with_context(x: int, ctx: Context) -> str:
                 ctx.info(f"Processing {x}")
                 return str(x)
+
+            @server.tool(etdi=True, etdi_permissions=['data:read'], etdi_max_call_depth=3)
+            def secure_tool(x: int) -> str:
+                return f"Securely processed: {x}"
 
             @server.tool()
             async def async_tool(x: int, context: Context) -> str:
@@ -379,6 +403,59 @@ class FastMCP:
             )
 
         def decorator(fn: AnyFunction) -> AnyFunction:
+            # Handle ETDI integration
+            if etdi and ETDI_AVAILABLE:
+                # Create ETDI tool definition
+                tool_name = name or fn.__name__
+                tool_description = description or fn.__doc__ or f"Tool: {tool_name}"
+                
+                # Create permissions from etdi_permissions
+                permissions = []
+                if etdi_permissions:
+                    for perm_scope in etdi_permissions:
+                        permissions.append(Permission(
+                            name=perm_scope.replace(':', '_'),
+                            description=f"Permission for {perm_scope}",
+                            scope=perm_scope,
+                            required=True
+                        ))
+                
+                # Create call stack constraints if specified
+                call_stack_constraints = None
+                if any([etdi_max_call_depth, etdi_allowed_callees, etdi_blocked_callees]):
+                    call_stack_constraints = CallStackConstraints(
+                        max_depth=etdi_max_call_depth,
+                        allowed_callees=etdi_allowed_callees,
+                        blocked_callees=etdi_blocked_callees
+                    )
+                
+                # Create ETDI tool definition
+                etdi_tool = ETDIToolDefinition(
+                    id=tool_name,
+                    name=tool_name,
+                    version="1.0.0",
+                    description=tool_description,
+                    provider={"id": "fastmcp", "name": "FastMCP Server"},
+                    schema={"type": "object"},  # Will be filled by tool manager
+                    permissions=permissions,
+                    call_stack_constraints=call_stack_constraints
+                )
+                
+                # Store ETDI metadata on the function for later use
+                fn._etdi_tool_definition = etdi_tool
+                fn._etdi_enabled = True
+            elif etdi and not ETDI_AVAILABLE:
+                # Warn if ETDI requested but not available
+                import warnings
+                warnings.warn(
+                    f"ETDI requested for tool '{name or fn.__name__}' but ETDI is not available. "
+                    "Install with 'pip install mcp[etdi]' to enable ETDI features.",
+                    UserWarning
+                )
+                fn._etdi_enabled = False
+            else:
+                fn._etdi_enabled = False
+            
             self.add_tool(
                 fn, name=name, description=description, annotations=annotations
             )
