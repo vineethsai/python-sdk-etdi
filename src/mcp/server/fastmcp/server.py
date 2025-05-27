@@ -56,6 +56,11 @@ try:
     ETDI_AVAILABLE = True
 except ImportError:
     ETDI_AVAILABLE = False
+
+
+class SecurityError(Exception):
+    """ETDI security violation"""
+    pass
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 from mcp.shared.context import LifespanContextT, RequestContext
 from mcp.types import (
@@ -186,6 +191,15 @@ class FastMCP:
         self._custom_starlette_routes: list[Route] = []
         self.dependencies = self.settings.dependencies
         self._session_manager: StreamableHTTPSessionManager | None = None
+        
+        # ETDI security components
+        if ETDI_AVAILABLE:
+            from mcp.etdi import CallStackVerifier
+            self._etdi_verifier = CallStackVerifier()
+            self._current_session_id = "fastmcp_session"
+            self._current_user_permissions = []  # Will be set by auth middleware
+        else:
+            self._etdi_verifier = None
 
         # Set up MCP protocol handlers
         self._setup_handlers()
@@ -444,6 +458,10 @@ class FastMCP:
                 # Store ETDI metadata on the function for later use
                 fn._etdi_tool_definition = etdi_tool
                 fn._etdi_enabled = True
+                
+                # AUTOMATICALLY wrap the function with security enforcement
+                fn = self._wrap_with_etdi_security(fn, etdi_tool)
+                
             elif etdi and not ETDI_AVAILABLE:
                 # Warn if ETDI requested but not available
                 import warnings
@@ -462,6 +480,45 @@ class FastMCP:
             return fn
 
         return decorator
+    
+    def _wrap_with_etdi_security(self, fn: AnyFunction, etdi_tool: 'ETDIToolDefinition') -> AnyFunction:
+        """Automatically wrap function with ETDI security enforcement"""
+        if not ETDI_AVAILABLE:
+            return fn
+            
+        def security_wrapper(*args, **kwargs):
+            # 1. Check permissions
+            if etdi_tool.permissions:
+                required_perms = [p.scope for p in etdi_tool.permissions if p.required]
+                if not self._check_permissions(required_perms):
+                    missing = set(required_perms) - set(self._current_user_permissions)
+                    raise PermissionError(f"Access denied. Missing permissions: {missing}")
+            
+            # 2. Verify call stack constraints
+            if etdi_tool.call_stack_constraints and self._etdi_verifier:
+                try:
+                    self._etdi_verifier.verify_call(etdi_tool, session_id=self._current_session_id)
+                except Exception as e:
+                    raise SecurityError(f"ETDI security violation: {e}")
+            
+            # 3. Execute the original function if security checks pass
+            return fn(*args, **kwargs)
+        
+        # Preserve function metadata
+        security_wrapper.__name__ = fn.__name__
+        security_wrapper.__doc__ = fn.__doc__
+        security_wrapper._etdi_tool_definition = etdi_tool
+        security_wrapper._etdi_enabled = True
+        
+        return security_wrapper
+    
+    def _check_permissions(self, required_permissions: list[str]) -> bool:
+        """Check if current user has required permissions"""
+        return all(perm in self._current_user_permissions for perm in required_permissions)
+    
+    def set_user_permissions(self, permissions: list[str]) -> None:
+        """Set current user permissions (called by auth middleware)"""
+        self._current_user_permissions = permissions
 
     def add_resource(self, resource: Resource) -> None:
         """Add a resource to the server.
