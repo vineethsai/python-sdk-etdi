@@ -289,11 +289,40 @@ class ChangeDetectionResult:
 
 
 @dataclass
+class KeyConfig:
+    """Configuration for cryptographic keys"""
+    private_key_path: Optional[str] = None
+    public_key_path: Optional[str] = None
+    key_algorithm: str = "RS256"
+    key_size: int = 2048
+    auto_generate: bool = True
+
+@dataclass
+class StorageConfig:
+    """Configuration for approval storage"""
+    storage_type: str = "file"  # file, database, memory
+    storage_path: Optional[str] = None
+    encryption_enabled: bool = True
+    backup_enabled: bool = True
+    retention_days: int = 365
+
+@dataclass
+class ClientOptions:
+    """Additional client options"""
+    timeout_seconds: int = 30
+    retry_attempts: int = 3
+    enable_caching: bool = True
+    cache_ttl_seconds: int = 300
+    enable_metrics: bool = True
+
+@dataclass
 class ETDIClientConfig:
     """Configuration for ETDI client"""
     security_level: SecurityLevel = SecurityLevel.ENHANCED
     oauth_config: Optional[Dict[str, Any]] = None
-    storage_config: Optional[Dict[str, Any]] = None
+    key_config: Optional[KeyConfig] = None
+    storage_config: Optional[StorageConfig] = None
+    options: Optional[ClientOptions] = None
     verification_cache_ttl: int = 300  # 5 minutes
     allow_non_etdi_tools: bool = True
     show_unverified_tools: bool = False

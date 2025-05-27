@@ -508,6 +508,105 @@ class ETDIClient:
             await self.initialize()
         
         try:
+            tool = self._discovered_tools.get(tool_id)
+            if not tool:
+                raise ToolNotFoundError(f"Tool {tool_id} not found", tool_id=tool_id)
+            
+            # Remove existing approval
+            await self.approval_manager.revoke_approval(tool_id)
+            
+            # Emit reapproval request event
+            emit_tool_event(
+                EventType.TOOL_REAPPROVAL_REQUESTED,
+                tool_id,
+                "ETDIClient",
+                tool_name=tool.name,
+                tool_version=tool.version,
+                provider_id=tool.provider.get("id")
+            )
+            
+            self._emit_event("tool_reapproval_requested", {"tool_id": tool_id})
+            logger.info(f"Re-approval requested for tool {tool_id}")
+            
+        except Exception as e:
+            logger.error(f"Error requesting re-approval for tool {tool_id}: {e}")
+            raise ETDIError(f"Re-approval request failed: {e}")
+    
+    async def check_permission(self, tool_id: str, permission: str) -> bool:
+        """
+        Check if a tool has a specific permission
+        
+        Args:
+            tool_id: Tool identifier
+            permission: Permission scope to check
+            
+        Returns:
+            True if tool has the permission
+        """
+        if not self._initialized:
+            await self.initialize()
+        
+        try:
+            tool = self._discovered_tools.get(tool_id)
+            if not tool:
+                return False
+            
+            # Check if tool has the permission
+            for perm in tool.permissions:
+                if perm.scope == permission:
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error checking permission {permission} for tool {tool_id}: {e}")
+            return False
+    
+    def on(self, event: str, listener: Callable) -> 'ETDIClient':
+        """
+        Register an event listener
+        
+        Args:
+            event: Event name
+            listener: Callback function
+            
+        Returns:
+            Self for chaining
+        """
+        if event not in self._event_listeners:
+            self._event_listeners[event] = []
+        self._event_listeners[event].append(listener)
+        return self
+    
+    def off(self, event: str, listener: Callable) -> 'ETDIClient':
+        """
+        Remove an event listener
+        
+        Args:
+            event: Event name
+            listener: Callback function to remove
+            
+        Returns:
+            Self for chaining
+        """
+        if event in self._event_listeners:
+            try:
+                self._event_listeners[event].remove(listener)
+            except ValueError:
+                pass  # Listener not found
+        return self
+    
+    async def request_reapproval(self, tool_id: str) -> None:
+        """
+        Request re-approval for a tool
+        
+        Args:
+            tool_id: Tool identifier
+        """
+        if not self._initialized:
+            await self.initialize()
+        
+        try:
             # Remove existing approval to force re-approval
             await self.approval_manager.remove_approval(tool_id)
             

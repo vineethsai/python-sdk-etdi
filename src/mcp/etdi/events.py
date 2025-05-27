@@ -22,6 +22,8 @@ class EventType(Enum):
     TOOL_INVOKED = "tool_invoked"
     TOOL_UPDATED = "tool_updated"
     TOOL_REMOVED = "tool_removed"
+    TOOL_REAPPROVAL_REQUESTED = "tool_reapproval_requested"
+    TOOL_EXPIRED = "tool_expired"
     
     # Security events
     SIGNATURE_VERIFIED = "signature_verified"
