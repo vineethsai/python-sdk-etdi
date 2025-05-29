@@ -27,14 +27,14 @@ Defining and enforcing what authenticated entities are allowed to do.
     ```
 -   **Scope-Based Access Control**: OAuth scopes granted to clients are checked against the permissions required by tools. A tool invocation is only allowed if the client possesses all necessary scopes.
 -   **Role-Based Access Control (RBAC)**: User roles, often managed by the OAuth provider, can be mapped to sets of permissions or scopes, simplifying authorization management.
--   **Caller/Callee Authorization**: Specific to [Call Stack Security](../attack-prevention.md#call-stack-security), this ensures that a tool (caller) is authorized to invoke another tool (callee), and the callee is authorized to be invoked by the caller.
+-   **Caller/Callee Authorization**: Specific to [Call Stack Security](attack-prevention.md#call-stack-security), this ensures that a tool (caller) is authorized to invoke another tool (callee), and the callee is authorized to be invoked by the caller.
 
 ## 3. Tool Integrity & Verification
 
 Ensuring tools are authentic, have not been tampered with, and their versions are managed.
 
 -   **Cryptographic Signatures**: Tool definitions can be cryptographically signed by their providers. ETDI clients verify these signatures to ensure the tool definition hasn't been altered since publication.
--   **Immutable Versioning**: Each version of a tool has a unique identifier, and its definition (including code references or hashes) is immutable. This is key to [Rug Poisoning Protection](../attack-prevention/rug-poisoning.md).
+-   **Immutable Versioning**: Each version of a tool has a unique identifier, and its definition (including code references or hashes) is immutable. This is key to [Rug Poisoning Protection](attack-prevention/rug-poisoning.md).
 -   **Behavioral Verification & Monitoring (Conceptual)**: While direct real-time behavioral blocking might be an advanced feature, ETDI supports robust audit logging. These logs can be fed into external security monitoring systems (like SIEMs) to detect anomalous behavior (e.g., resource access patterns, API call frequency) and trigger alerts or manual intervention. The core ETDI framework focuses on providing the necessary data for such systems.
 -   **Approval Workflows**: ETDI clients require explicit user approval for new tools or new versions of existing tools, especially if permissions change. This gives users control over which tools can operate on their behalf.
 

@@ -54,9 +54,9 @@ By combining these technical measures and best practices, ETDI significantly rai
 
 ## Related Documentation
 
-- [Overall Attack Prevention Strategies](./index.md)
+- [Overall Attack Prevention Strategies](../attack-prevention.md)
 - [Rug Poisoning Protection](./rug-poisoning.md)
 - [Security Features Overview](../security-features.md)
-- [Tool Poisoning Demo Example](../../examples/etdi/tool_poisoning_demo.md)
-- [Integration Guide](../../../INTEGRATION_GUIDE.md)
-- [FastMCP Security](../../fastmcp/index.md) 
+- [Tool Poisoning Demo Example](../examples/etdi/tool_poisoning_demo.md)
+- [Integration Guide](../../INTEGRATION_GUIDE.md)
+- [FastMCP Security](../fastmcp/index.md) 

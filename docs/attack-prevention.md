@@ -6,7 +6,7 @@ ETDI provides robust protection against advanced AI security threats, including 
 
 Tool poisoning occurs when a malicious actor introduces or replaces a tool with a compromised version. ETDI prevents this via:
 
-- **Cryptographic Signatures**: All tools are signed and verified at registration and invocation. See [Tool Poisoning Demo](tool-poisoning.md) for details.
+- **Cryptographic Signatures**: All tools are signed and verified at registration and invocation. See [Tool Poisoning Demo](attack-prevention/tool-poisoning.md) for details.
 - **Behavioral Verification**: Tools are monitored for anomalous behavior and policy violations.
 - **Approval Workflow**: Users must explicitly approve new or changed tools before use.
 
@@ -27,7 +27,7 @@ Rug poisoning ("rug pull") is when a tool is swapped or modified after initial a
 - **Change Detection**: Any change to code, permissions, or metadata triggers reapproval.
 - **Audit Trails**: All tool changes and approvals are logged for forensics.
 
-Details on how ETDI mitigates this can be found in [Rug Poisoning Protection](rug-poisoning.md).
+Details on how ETDI mitigates this can be found in [Rug Poisoning Protection](attack-prevention/rug-poisoning.md).
 
 ### Example: Versioned Tool Approval
 
@@ -69,7 +69,7 @@ ETDI implements call stack security through several mechanisms:
 
 These features collectively ensure that tool interactions are confined to well-defined boundaries, significantly reducing the attack surface.
 
-Refer to example scripts like `protocol_call_stack_example.py` and `caller_callee_authorization_example.py` in the [Examples & Demos](../examples/index.md) section for practical implementations.
+Refer to example scripts like `protocol_call_stack_example.py` and `caller_callee_authorization_example.py` in the [Examples & Demos](examples/index.md) section for practical implementations.
 
 ## Call Chain Validation (Legacy)
 
@@ -92,8 +92,8 @@ server = SecureServer(security_policy=policy)
 
 ## Real-World Attack Scenarios
 
-- **Tool Poisoning Demo**: See the detailed [Tool Poisoning Prevention page](tool-poisoning.md) and its associated demo scripts in `examples/etdi/tool_poisoning_demo/`.
-- **Rug Poisoning Detection**: The framework automatically detects and blocks unauthorized tool changes as detailed in [Rug Poisoning Protection](rug-poisoning.md).
+- **Tool Poisoning Demo**: See the detailed [Tool Poisoning Prevention page](attack-prevention/tool-poisoning.md) and its associated demo scripts in `examples/etdi/tool_poisoning_demo/`.
+- **Rug Poisoning Detection**: The framework automatically detects and blocks unauthorized tool changes as detailed in [Rug Poisoning Protection](attack-prevention/rug-poisoning.md).
 
 ## Best Practices
 

@@ -46,7 +46,7 @@ ETDI employs a multi-layered defense strategy to detect and mitigate rug poisoni
         # Proceed with invocation
         print("Tool version and integrity verified.")
     ```
--   **Relevant ETDI Features**: `ToolDefinition.version`. The hash is implicitly part of the signature and verification process. See [Security Features](../../security-features.md#3-tool-integrity--verification) for details on tool verification.
+-   **Relevant ETDI Features**: `ToolDefinition.version`. The hash is implicitly part of the signature and verification process. See [Security Features](../security-features.md#3-tool-integrity--verification) for details on tool verification.
 
 ### 2. Change Detection & Re-approval Workflow
 
@@ -59,7 +59,7 @@ ETDI employs a multi-layered defense strategy to detect and mitigate rug poisoni
 -   **Concept**: Tools declare the permissions they require (e.g., `file:read`, `api:user_data:write`). These permissions are part of the signed tool definition.
 -   **Protection**: Even if a tool's code is maliciously altered to attempt actions beyond its declared permissions, the ETDI framework (both client and potentially server-side middleware) will block such attempts if they don't align with the granted OAuth scopes or tool permissions.
 -   **Example**: A tool originally approved for `read-only` access cannot suddenly start writing data if its code is changed, as the permission grant is tied to the original, verified definition.
--   **Relevant ETDI Features**: `ToolDefinition.permissions`, OAuth scope validation. See [Authentication & Authorization in Security Features](../../security-features.md#2-authorization).
+-   **Relevant ETDI Features**: `ToolDefinition.permissions`, OAuth scope validation. See [Authentication & Authorization in Security Features](../security-features.md#2-authorization).
 
 ### 4. Comprehensive Audit Trails
 
@@ -87,4 +87,4 @@ ETDI's combination of cryptographic verification, immutable versioning, mandator
 
 -   [Tool Poisoning Prevention](tool-poisoning.md)
 -   [Overall Attack Prevention Strategies](../attack-prevention.md)
--   [Security Features Overview](../../security-features.md)
+-   [Security Features Overview](../security-features.md)

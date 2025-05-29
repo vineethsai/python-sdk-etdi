@@ -26,7 +26,7 @@ nav:
   - Examples:
       - Overview: examples/index.md
       - ETDI Core Examples: examples/etdi/index.md
-      - FastMCP Integration: examples/fastmcp/index.md
+      - FastMCP Integration: fastmcp/index.md
       - Tool Poisoning Demo: examples/etdi/tool_poisoning_demo.md
       # Individual ETDI Examples (add more as needed or keep them under ETDI Core Examples index)
       - Basic ETDI Usage: examples/etdi/basic_usage.md
@@ -100,7 +100,7 @@ plugins:
             group_by_category: false
             # 3 because docs are in pages with an H2 just above them
             heading_level: 3
-          import:
+          inventories:
             - url: https://docs.python.org/3/objects.inv
             - url: https://docs.pydantic.dev/latest/objects.inv
             - url: https://typing-extensions.readthedocs.io/en/latest/objects.inv
