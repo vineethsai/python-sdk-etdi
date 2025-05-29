@@ -31,7 +31,7 @@ nav:
       # Individual ETDI Examples (add more as needed or keep them under ETDI Core Examples index)
       - Basic ETDI Usage: examples/etdi/basic_usage.md
       - E2E Demo: examples/etdi/run_e2e_demo.md
-  - API Reference: api/index.md
+  - API Reference: api.md
 
 # TODO(Marcelo): Add Anthropic copyright?
 # copyright: © Model Context Protocol 2025 to present

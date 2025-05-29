@@ -46,7 +46,7 @@ ETDI employs a multi-layered defense strategy to detect and mitigate rug poisoni
         # Proceed with invocation
         print("Tool version and integrity verified.")
     ```
--   **Relevant ETDI Features**: `ToolDefinition.version`. The hash is implicitly part of the signature and verification process. See [Security Features](../security-features.md#3-tool-integrity--verification) for details on tool verification.
+-   **Relevant ETDI Features**: `ToolDefinition.version`. The hash is implicitly part of the signature and verification process. See [Security Features](../security-features.md#3-tool-integrity-verification) for details on tool verification.
 
 ### 2. Change Detection & Re-approval Workflow
 

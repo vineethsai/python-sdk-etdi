@@ -58,5 +58,5 @@ By combining these technical measures and best practices, ETDI significantly rai
 - [Rug Poisoning Protection](./rug-poisoning.md)
 - [Security Features Overview](../security-features.md)
 - [Tool Poisoning Demo Example](../examples/etdi/tool_poisoning_demo.md)
-- [Integration Guide](../../INTEGRATION_GUIDE.md)
+- [Integration Guide](../../integration-guide.md)
 - [FastMCP Security](../fastmcp/index.md) 
