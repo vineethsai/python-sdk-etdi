@@ -1023,24 +1023,10 @@
 <p>ETDI employs a multi-layered defense strategy to detect and mitigate rug poisoning attacks:</p>
 <h3 id="1-immutable-tool-versioning-cryptographic-hashing">1. Immutable Tool Versioning &amp; Cryptographic Hashing</h3>
 <ul>
-<li><strong>Concept</strong>: Every version of an ETDI tool definition (including its code, schema, permissions, and security policies) is cryptographically hashed. This hash acts as a unique, immutable fingerprint for that specific version.</li>
-<li><strong>Protection</strong>: If any part of the tool definition changes, the hash will change. ETDI clients can verify that the tool they are about to invoke matches the hash of the version they previously approved.</li>
-<li><strong>Example</strong>:
-    <div class="language-python highlight"><pre><span></span><code><span class="c1"># Conceptual client-side check</span>
-<span class="n">approved_tool_version</span> <span class="o">=</span> <span class="s2">&quot;1.0.0&quot;</span>
-<span class="n">approved_tool_hash</span> <span class="o">=</span> <span class="s2">&quot;sha256-abc123xyz789...&quot;</span> <span class="c1"># Hash of Tool v1.0.0</span>
-
-<span class="c1"># Client discovers tool &#39;SuperTool&#39; v1.0.0 from server</span>
-<span class="c1"># Server provides tool definition for &#39;SuperTool&#39; v1.0.0</span>
-<span class="n">current_tool_hash</span> <span class="o">=</span> <span class="n">calculate_hash</span><span class="p">(</span><span class="n">tool_definition_from_server</span><span class="p">)</span> <span class="c1"># Conceptual hash calculation</span>
-
-<span class="k">if</span> <span class="n">current_tool_hash</span> <span class="o">!=</span> <span class="n">approved_tool_hash</span><span class="p">:</span>
-    <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tool &#39;SuperTool&#39; v</span><span class="si">{</span><span class="n">approved_tool_version</span><span class="si">}</span><span class="s2"> has changed since approval! Possible rug pull.&quot;</span><span class="p">)</span>
-<span class="k">else</span><span class="p">:</span>
-    <span class="c1"># Proceed with invocation</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Tool version and integrity verified.&quot;</span><span class="p">)</span>
-</code></pre></div></li>
-<li><strong>Relevant ETDI Features</strong>: <code>ToolDefinition.version</code>. The hash is implicitly part of the signature and verification process. See <a href="../../security-features/#3-tool-integrity-verification">Security Features</a> for details on tool verification.</li>
+<li><strong>Concept</strong>: Every version of an ETDI tool definition (including its code, schema, permissions, and security policies) is ideally associated with a cryptographic hash. This hash acts as a unique, immutable fingerprint for that specific version.</li>
+<li><strong>Protection</strong>: If any part of the tool definition changes, its hash would change. ETDI clients, through their verification mechanisms (often tied to cryptographic signatures which inherently hash the content), can detect if a tool has changed from a previously known and approved version. This prevents invoking a tool that has been altered since its last approval.</li>
+<li><strong>Verification Process</strong>: When a client encounters a tool, it retrieves its definition. This definition is cryptographically signed by the provider. The signature verification process implicitly checks the integrity of the entire tool definition. If the client has previously approved a specific version (identified by its name and version string, and potentially its signature/hash), it can detect if the current version presented by the server is different or has been tampered with. A mismatch would lead to rejection or a re-approval requirement.</li>
+<li><strong>Relevant ETDI Features</strong>: <code>ToolDefinition.version</code>, cryptographic signature verification which covers the integrity of the tool definition. See <a href="../../security-features/#3-tool-integrity-verification">Security Features</a> for details on tool verification.</li>
 </ul>
 <h3 id="2-change-detection-re-approval-workflow">2. Change Detection &amp; Re-approval Workflow</h3>
 <ul>

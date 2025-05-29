@@ -904,15 +904,15 @@
 <li>
 <p><strong>Cryptographic Signatures &amp; Verification</strong>:</p>
 <ul>
-<li><strong>Authenticity</strong>: Tools are cryptographically signed by their providers. ETDI clients verify these signatures against trusted provider public keys before execution.</li>
+<li><strong>Authenticity</strong>: Tools are cryptographically signed by their providers. ETDI clients verify these signatures, typically by having access to the provider's public key or by retrieving it from a trusted source, before execution.</li>
 <li><strong>Integrity</strong>: The signature ensures that the tool's definition and metadata have not been tampered with since publication.</li>
 </ul>
 </li>
 <li>
 <p><strong>Provider Authentication &amp; Trust Management</strong>:</p>
 <ul>
-<li><strong>OAuth 2.0 Integration</strong>: ETDI encourages tools to be protected by OAuth 2.0, ensuring that the tool provider is authenticated.</li>
-<li><strong>Trusted Provider Registry (Conceptual)</strong>: Systems can maintain a list of trusted provider identities and their corresponding public keys.</li>
+<li><strong>OAuth 2.0 Integration</strong>: ETDI encourages tools to be protected by OAuth 2.0, ensuring that the tool provider is authenticated. This helps confirm the identity of the entity serving the tool.</li>
+<li><strong>Client-Side Verification</strong>: The ETDI client is responsible for verifying the authenticity of the tool provider, often through mechanisms like checking the issuer of an OAuth token or validating a known signature.</li>
 </ul>
 </li>
 <li>

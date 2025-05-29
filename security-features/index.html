@@ -881,7 +881,7 @@
 <ul>
 <li><strong>Cryptographic Signatures</strong>: Tool definitions can be cryptographically signed by their providers. ETDI clients verify these signatures to ensure the tool definition hasn't been altered since publication.</li>
 <li><strong>Immutable Versioning</strong>: Each version of a tool has a unique identifier, and its definition (including code references or hashes) is immutable. This is key to <a href="../attack-prevention/rug-poisoning/">Rug Poisoning Protection</a>.</li>
-<li><strong>Behavioral Verification &amp; Monitoring (Conceptual)</strong>: While direct real-time behavioral blocking might be an advanced feature, ETDI supports robust audit logging. These logs can be fed into external security monitoring systems (like SIEMs) to detect anomalous behavior (e.g., resource access patterns, API call frequency) and trigger alerts or manual intervention. The core ETDI framework focuses on providing the necessary data for such systems.</li>
+<li><strong>Audit Logging for Security Monitoring</strong>: ETDI supports robust audit logging (see section 4). These logs can be fed into external security monitoring systems (like SIEMs) to detect anomalous behavior (e.g., resource access patterns, API call frequency) and trigger alerts or manual intervention. The ETDI framework focuses on providing the necessary data for such external analysis and monitoring systems.</li>
 <li><strong>Approval Workflows</strong>: ETDI clients require explicit user approval for new tools or new versions of existing tools, especially if permissions change. This gives users control over which tools can operate on their behalf.</li>
 </ul>
 <h2 id="4-audit-logging">4. Audit Logging</h2>
@@ -909,7 +909,6 @@
 <span class="n">policy</span> <span class="o">=</span> <span class="n">SecurityPolicy</span><span class="p">(</span>
     <span class="n">security_level</span><span class="o">=</span><span class="n">SecurityLevel</span><span class="o">.</span><span class="n">HIGH</span><span class="p">,</span>       <span class="c1"># Or STRICT, ENHANCED, BASIC</span>
     <span class="n">require_tool_signatures</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="c1"># enable_behavior_monitoring=True, # Removed conceptual flag</span>
     <span class="n">enable_call_chain_validation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">max_call_depth</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
     <span class="n">audit_all_calls</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>

@@ -484,30 +484,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#call-chain-validation-legacy" class="md-nav__link">
-    <span class="md-ellipsis">
-      Call Chain Validation (Legacy)
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Call Chain Validation (Legacy)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example-call-chain-policy-legacy" class="md-nav__link">
-    <span class="md-ellipsis">
-      Example: Call Chain Policy (Legacy)
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#real-world-attack-scenarios" class="md-nav__link">
     <span class="md-ellipsis">
       Real-World Attack Scenarios
@@ -898,30 +874,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#call-chain-validation-legacy" class="md-nav__link">
-    <span class="md-ellipsis">
-      Call Chain Validation (Legacy)
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Call Chain Validation (Legacy)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example-call-chain-policy-legacy" class="md-nav__link">
-    <span class="md-ellipsis">
-      Example: Call Chain Policy (Legacy)
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#real-world-attack-scenarios" class="md-nav__link">
     <span class="md-ellipsis">
       Real-World Attack Scenarios
@@ -964,7 +916,7 @@
 <p>Tool poisoning occurs when a malicious actor introduces or replaces a tool with a compromised version. ETDI prevents this via:</p>
 <ul>
 <li><strong>Cryptographic Signatures</strong>: All tools are signed and verified at registration and invocation. See <a href="tool-poisoning/">Tool Poisoning Demo</a> for details.</li>
-<li><strong>Behavioral Verification</strong>: Tools are monitored for anomalous behavior and policy violations.</li>
+<li><strong>Audit Logs for Monitoring</strong>: Comprehensive audit logs capture tool activity, which can be fed into external monitoring systems to detect anomalous behavior and policy violations.</li>
 <li><strong>Approval Workflow</strong>: Users must explicitly approve new or changed tools before use.</li>
 </ul>
 <h3 id="example-secure-tool-registration">Example: Secure Tool Registration</h3>
@@ -1019,21 +971,6 @@
 </ul>
 <p>These features collectively ensure that tool interactions are confined to well-defined boundaries, significantly reducing the attack surface.</p>
 <p>Refer to example scripts like <code>protocol_call_stack_example.py</code> and <code>caller_callee_authorization_example.py</code> in the <a href="../examples/">Examples &amp; Demos</a> section for practical implementations.</p>
-<h2 id="call-chain-validation-legacy">Call Chain Validation (Legacy)</h2>
-<p>This section is an older description and is superseded by the more detailed "Call Stack Security" section above. It is kept for historical context but the principles are better elaborated above.</p>
-<ul>
-<li><strong>Stack Constraints</strong>: Prevents privilege escalation by enforcing max call depth and allowed call chains.</li>
-<li><strong>Caller/Callee Authorization</strong>: Only authorized tools can invoke each other.</li>
-</ul>
-<h3 id="example-call-chain-policy-legacy">Example: Call Chain Policy (Legacy)</h3>
-<div class="language-python highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">mcp.etdi.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityPolicy</span>
-
-<span class="n">policy</span> <span class="o">=</span> <span class="n">SecurityPolicy</span><span class="p">(</span>
-    <span class="n">max_call_depth</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-    <span class="n">allowed_callers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tool_a&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;tool_b&quot;</span><span class="p">,</span> <span class="s2">&quot;tool_c&quot;</span><span class="p">]}</span>
-<span class="p">)</span>
-<span class="n">server</span> <span class="o">=</span> <span class="n">SecureServer</span><span class="p">(</span><span class="n">security_policy</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
-</code></pre></div>
 <h2 id="real-world-attack-scenarios">Real-World Attack Scenarios</h2>
 <ul>
 <li><strong>Tool Poisoning Demo</strong>: See the detailed <a href="tool-poisoning/">Tool Poisoning Prevention page</a> and its associated demo scripts in <code>examples/etdi/tool_poisoning_demo/</code>.</li>

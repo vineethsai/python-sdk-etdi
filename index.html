@@ -819,8 +819,8 @@
 <li><strong>👁️ Rug Poisoning Protection</strong>: Change detection and reapproval workflows  </li>
 <li><strong>🔐 Call Chain Validation</strong>: Stack constraints and caller/callee authorization</li>
 <li><strong>🔑 Enterprise Authentication</strong>: OAuth 2.0, SAML, and SSO integration</li>
-<li><strong>📊 Comprehensive Auditing</strong>: Security events, compliance reporting, and forensics</li>
-<li><strong>⚡ Real-time Monitoring</strong>: Live threat detection and automated response</li>
+<li><strong>📊 Comprehensive Auditing</strong>: Detailed logs for security events, compliance, and forensics.</li>
+<li><strong>📈 Data for Monitoring</strong>: Provides rich data to feed into external real-time monitoring and threat detection systems.</li>
 </ul>
 <h2 id="quick-start">Quick Start</h2>
 <div class="language-python highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">mcp.etdi</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecureServer</span><span class="p">,</span> <span class="n">ToolProvider</span>
@@ -829,8 +829,7 @@
 <span class="c1"># Create secure server with ETDI protection</span>
 <span class="n">server</span> <span class="o">=</span> <span class="n">SecureServer</span><span class="p">(</span>
     <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;high&quot;</span><span class="p">,</span>
-    <span class="n">enable_tool_verification</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">enable_behavior_monitoring</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">enable_tool_verification</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 
 <span class="c1"># Add OAuth authentication</span>

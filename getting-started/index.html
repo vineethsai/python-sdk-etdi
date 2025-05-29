@@ -964,8 +964,7 @@
     <span class="n">server</span> <span class="o">=</span> <span class="n">SecureServer</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-secure-server&quot;</span><span class="p">,</span>
         <span class="n">security_level</span><span class="o">=</span><span class="n">SecurityLevel</span><span class="o">.</span><span class="n">HIGH</span><span class="p">,</span>
-        <span class="n">enable_tool_verification</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">enable_behavior_monitoring</span><span class="o">=</span><span class="kc">True</span>
+        <span class="n">enable_tool_verification</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
 
     <span class="c1"># Register a secure tool</span>
@@ -988,7 +987,6 @@
 <span class="n">policy</span> <span class="o">=</span> <span class="n">SecurityPolicy</span><span class="p">(</span>
     <span class="n">security_level</span><span class="o">=</span><span class="n">SecurityLevel</span><span class="o">.</span><span class="n">HIGH</span><span class="p">,</span>
     <span class="n">require_tool_signatures</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">enable_behavior_monitoring</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">enable_call_chain_validation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">max_call_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="n">audit_all_calls</span><span class="o">=</span><span class="kc">True</span>
