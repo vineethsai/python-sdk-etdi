@@ -96,4 +96,4 @@ async def secure_file_read(path: str) -> str:
   {{< hextra/card link="/examples" title="Examples & Demos" icon="code" >}}
     Real-world examples and interactive demonstrations.
   {{< /hextra/card >}}
-{{< /hextra/cards >}} 
+{{< /hextra/cards >}} # Trigger deploy workflow
