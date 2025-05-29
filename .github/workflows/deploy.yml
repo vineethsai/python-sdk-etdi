@@ -23,6 +23,10 @@ jobs:
           hugo-version: 'latest'
           extended: true
 
+      - name: Hugo Mod Get
+        working-directory: docs-hextra
+        run: hugo mod get
+
       - name: Build
         working-directory: docs-hextra
         run: hugo --minify
