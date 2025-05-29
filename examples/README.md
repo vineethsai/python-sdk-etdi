@@ -27,12 +27,7 @@ python claude_desktop_integration.py
 # 5. Restart Claude Desktop and try the tool poisoning demo!
 ```
 
-### 🛡️ What You'll Experience
 
-- **Real Tool Poisoning Attack**: See identical tools with different security
-- **ETDI Protection**: Watch malicious tools get blocked automatically  
-- **Security Analysis**: Understand how cryptographic verification works
-- **AI Assistant Integration**: Experience protection in real conversations
 
 ## 📁 Available Examples
 
